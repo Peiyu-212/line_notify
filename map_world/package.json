@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "node.js": "^0.0.1-security",
+    "winwheel": "^1.0.1"
+  }
+}
