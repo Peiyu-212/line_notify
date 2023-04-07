@@ -1,0 +1,76 @@
+version: "3.6"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./deploy/Dockerfile.app
+      args:
+        - ENV=.env
+    env_file: ./.env
+    restart: always
+    networks:
+      internal:
+        aliases:
+          - app
+    expose:
+      - 55555
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/etc/timezone:/etc/timezone:ro"
+      - type: volume
+        source: staticfiles
+        target: /shared
+        volume:
+          nocopy: false
+      - type: volume
+        source: log
+        target: /log
+        volume:
+          nocopy: false
+  server:
+    build:
+      context: .
+      dockerfile: ./deploy/Dockerfile.web
+    container_name: ${DOCKER_WEB_CONTAINER}
+    env_file: ./server/.env_file
+    restart: always
+    networks:
+      - internal
+    ports:
+      - 8003:80
+    volumes:
+      - type: volume
+        source: staticfiles
+        target: /usr/share/nginx/html
+        volume:
+          nocopy: true
+      - type: volume
+        source: log
+        target: /log
+        volume:
+          nocopy: false
+    depends_on:
+      - app
+  db:
+    image: postgres:12
+    restart: always
+    container_name: ${DOCKER_DB_CONTAINER}
+    volumes:
+      - ./db/postgresql:/var/lib/postgresql/data/
+    ports:
+      - 5432
+    environment:
+      POSTGRES_USER: ${DOCKER_DB_USER}
+      POSTGRES_PASSWORD: ${DOCKER_DB_PASSWORD}
+      POSTGRES_DB: ${DOCKER_DB_DATABASE}
+    env_file: ./.env
+    networks:
+      - internal
+
+networks:
+  internal:
+    name: practice
+
+volumes:
+  staticfiles:
+  log:
