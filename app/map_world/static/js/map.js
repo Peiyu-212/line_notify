@@ -52,7 +52,31 @@ var map = new Datamap({
     }
 });
   // 綁定地圖點擊事件
- 
+  const canvas = document.getElementById("choropleth_map");
+  const { width, height } = canvas.getBoundingClientRect();
+  const canvasFactor = width / height;
+  selectedCountry = isoCodeConverter[Country[0].code];
+  const countryFeature = map.current.svg.selectAll(`.datamaps-subunit.${selectedCountry}`)["0"]["0"].__data__;
+  if (countryFeature !== undefined) {
+    const bounds = path.bounds(countryFeature); // get bounds of selected country
+    bounds.s = bounds[0][1];
+    bounds.n = bounds[1][1];
+    bounds.w = bounds[0][0];
+    bounds.e = bounds[1][0];
+    bounds.height = Math.abs(bounds.n - bounds.s);
+    bounds.width = Math.abs(bounds.e - bounds.w);
+    newScale = 0.95 / Math.max(bounds.width / width, bounds.height / height);
+    const x = (bounds.w + bounds.e) / 2;
+    const y = (bounds.s + bounds.n) / 2;
+
+    /* specify the current zoom and translation vector */
+    zoom.scale(newScale);
+    zoom.translate([width / 2 - newScale * x, height / 2 - newScale * y]);
+
+    /* dispatches a zoom gesture to registered listeners */
+    zoom.event(map.current.svg.selectAll("g").transition().duration(2000));
+    map.current.svg.selectAll("g").call(zoom);
+  }
 map.svg.selectAll('.datamaps-subunit').on('click', function(geo) {
     // 顯示模態視窗
     var modal = document.getElementById("myModal");

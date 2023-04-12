@@ -1,5 +1,5 @@
 ##### Build Image
-FROM python:3.7-slim-bullseye AS builder
+FROM python:3.10-slim-bullseye AS builder
 LABEL maintainer Peiyu
 ARG PROJECT_NAME=map_world
 

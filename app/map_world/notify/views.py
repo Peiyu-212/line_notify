@@ -8,9 +8,12 @@ from django.views.generic.base import TemplateView
 from django.conf import settings
 
 from rest_framework.views import APIView
+from rest_framework import viewsets
 from rest_framework.response import Response
 
-
+from .models import City
+from .upload import Upload
+from .serializer import SelectNationSerializer
 # Create your views here.
 def line_notify(request):
     url = "https://api.nasa.gov/planetary/apod"
@@ -30,22 +33,28 @@ def line_notify(request):
     return HttpResponse(line_response.status_code)
 
 
-class ListCountryView(APIView):
+class ListCountryView(viewsets.GenericViewSet):
+    queryset = City.objects.select_related('country').all()
+    serializer_class = SelectNationSerializer
 
-    def get(self, request, format=None):
+    def list(self, request):
         """
         Return a list cities of choosed nation.
         """
-
-        nation = request.GET.get('nation')
-        df = pd.read_excel('worldcities.xlsx')
-        capital = ['admin', 'primary']
-        df_cities_list = df.loc[(df['country'] == nation) & 
-                                (df['capital'].isin(capital))]
-        cities_list = df_cities_list['admin_name'].unique().tolist()
-        random_cities = numpy.random.choice(cities_list, 8)
+        serializer = self.get_serializer(request.query_params)
+        cities_list = self.queryset.filter(country__name=serializer.data).values_list(
+            'name').distinct()
+        random_cities = numpy.random.choice(list(cities_list), 8)
         return Response(random_cities)
 
 
+class UploadFileViewSet(APIView):
+
+    def post(self, request, format=None):
+        upload_file = request.data['file']
+        response = Upload(upload_file).upload()
+        return Response(response)
+    
+
 class MapView(TemplateView):
-    template_name = "map.html"
+    template_name = "test.html"
